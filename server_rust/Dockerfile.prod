@@ -1,0 +1,84 @@
+# Multi-stage production Dockerfile for Community Coin Server
+# Stage 1: Build dependencies and cache layers
+FROM rust:1.86-slim as dependencies
+
+WORKDIR /app
+
+# Install system dependencies for building
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy manifests
+COPY Cargo.toml Cargo.lock ./
+
+# Create dummy main.rs to build dependencies
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+
+# Build dependencies (this layer will be cached)
+RUN cargo build --release
+RUN rm src/main.rs
+
+# Stage 2: Build the application
+FROM rust:1.86-slim as builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency cache from previous stage
+COPY --from=dependencies /app/target target
+COPY --from=dependencies /usr/local/cargo/registry /usr/local/cargo/registry
+
+# Copy manifests and source code
+COPY Cargo.toml Cargo.lock ./
+COPY . .
+
+# Build the application
+RUN cargo build --release
+
+# Stage 3: Runtime image
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -r -s /bin/false -u 1001 app
+
+WORKDIR /app
+
+# Copy binary and migrations
+COPY --from=builder /app/target/release/community_coin_server /app/community_coin_server
+COPY --from=builder /app/migrations /app/migrations
+
+# Set ownership
+RUN chown -R app:app /app && \
+    chmod +x /app/community_coin_server
+
+# Switch to non-root user
+USER app
+
+# Expose port
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Set environment variables
+ENV RUST_LOG=info
+ENV RUST_BACKTRACE=1
+
+# Run the application
+CMD ["./community_coin_server"] 

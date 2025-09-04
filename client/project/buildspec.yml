@@ -1,0 +1,96 @@
+version: 0.2
+
+# AWS CodeBuild specification for React Frontend
+# Builds Vite React app and deploys to S3 + CloudFront
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+    commands:
+      - echo Installing dependencies...
+      - npm ci --production=false
+      
+  pre_build:
+    commands:
+      - echo Pre-build phase started on `date`
+      - echo Logging in to AWS...
+      - aws --version
+      - echo Build environment variables:
+      - echo "  REACT_APP_API_URL = $REACT_APP_API_URL"
+      - echo "  REACT_APP_SOLANA_NETWORK = $REACT_APP_SOLANA_NETWORK"
+      - echo "  STATIC_BUCKET = $STATIC_BUCKET"
+      - echo "  CLOUDFRONT_DISTRIBUTION_ID = $CLOUDFRONT_DISTRIBUTION_ID"
+      
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the React application with Vite...
+      
+      # Create environment file for build
+      - |
+        cat > .env.production << EOF
+        VITE_API_URL=$REACT_APP_API_URL
+        VITE_SOLANA_NETWORK=$REACT_APP_SOLANA_NETWORK
+        VITE_APP_NAME="Community Coin"
+        VITE_APP_VERSION=$CODEBUILD_BUILD_NUMBER
+        EOF
+      
+      # Build the React app
+      - npm run build
+      
+      # Verify build output
+      - ls -la dist/
+      - echo "Build completed successfully"
+      
+  post_build:
+    commands:
+      - echo Post-build phase started on `date`
+      
+      # Sync files to S3 with appropriate cache headers
+      - echo Uploading to S3 bucket $STATIC_BUCKET...
+      
+      # Upload static assets with long cache (1 year)
+      - |
+        aws s3 sync dist/assets/ s3://$STATIC_BUCKET/assets/ \
+          --delete \
+          --cache-control "public, max-age=31536000, immutable" \
+          --metadata-directive REPLACE
+      
+      # Upload HTML files with short cache (5 minutes)
+      - |
+        aws s3 sync dist/ s3://$STATIC_BUCKET/ \
+          --exclude "assets/*" \
+          --delete \
+          --cache-control "public, max-age=300, must-revalidate" \
+          --metadata-directive REPLACE
+      
+      # Set correct content types
+      - |
+        aws s3 cp s3://$STATIC_BUCKET/index.html s3://$STATIC_BUCKET/index.html \
+          --content-type "text/html; charset=utf-8" \
+          --cache-control "public, max-age=300, must-revalidate" \
+          --metadata-directive REPLACE
+      
+      # Create CloudFront invalidation
+      - echo Creating CloudFront invalidation...
+      - |
+        aws cloudfront create-invalidation \
+          --distribution-id $CLOUDFRONT_DISTRIBUTION_ID \
+          --paths "/*" \
+          --query 'Invalidation.Id' \
+          --output text > invalidation_id.txt
+      
+      - echo "CloudFront invalidation created: $(cat invalidation_id.txt)"
+      - echo Build completed on `date`
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: 'dist'
+  name: frontend-build-$(date +%Y-%m-%d-%H-%M-%S)
+
+cache:
+  paths:
+    - 'node_modules/**/*'
+    - '.npm/**/*' 

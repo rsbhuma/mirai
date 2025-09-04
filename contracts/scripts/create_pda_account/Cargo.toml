@@ -1,0 +1,9 @@
+[package]
+name = "create_pda_account"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+solana-client = "1.18" # Use a recent version
+solana-sdk = "1.18" # Use a recent version matching client
+serde_json = "1.0" # Needed indirectly by read_keypair_file

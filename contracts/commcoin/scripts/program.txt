@@ -1,0 +1,10 @@
+root@personal:/code/contracts/coin_create# anchor deploy
+Deploying cluster: http://127.0.0.1:8899
+Upgrade authority: /code/contracts/test/data/solana_config/id.json
+Deploying program "coin_create"...
+Program path: /code/contracts/coin_create/target/deploy/coin_create.so...
+Program Id: DYXLtY7XsBrrBqjCUjEFm8kFc7Bc8LDd37ASbvNd9HaF
+
+Signature: 4XVTHWV6T3HwUkhVExzsPLwWVzJgdmWayFTiTbbweeGArsURbdzLHoPtZ7TJdsTr3onb1aknDTfAGwKjz2qnNRkP
+
+Deploy success

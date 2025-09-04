@@ -1,0 +1,4 @@
+Fetching details for transaction: TSLvdd1pWpHVjahSpsvCXUbgwsL3JAcvokwaKt1eokM
+Error making request to Helius API: 404 Client Error: Not Found for url: https://api.helius.xyz/v0/address/?api-key=c9108d6b-a742-44c0-862a-2da912d111e5
+Status Code: 404
+Response Body: {'jsonrpc': '2.0', 'error': {'code': -32603, 'message': 'Method not found'}}

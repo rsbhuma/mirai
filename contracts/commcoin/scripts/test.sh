@@ -1,0 +1,1 @@
+anchor test --no-idl --skip-local-validator

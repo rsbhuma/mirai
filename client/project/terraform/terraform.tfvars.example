@@ -1,0 +1,51 @@
+# Terraform Variables for Community Coin React Frontend AWS Deployment
+# Copy this file to terraform.tfvars and customize the values
+
+# Basic Configuration
+project_name = "community-coin-frontend"
+environment  = "production"
+aws_region   = "us-west-2"  # Choose your preferred region
+
+# Domain Configuration
+domain_name = "app.communitycoin.com"  # Replace with your frontend domain
+
+# Backend Integration
+backend_api_url = "https://api.communitycoin.com"  # Your backend API URL
+
+# Solana Network Configuration
+solana_network = "https://api.devnet.solana.com"  # or mainnet-beta for production
+
+# Example Cost Projections (Monthly USD):
+# 
+# MINIMAL USAGE (0-1K users, <1GB transfer):
+# - CloudFront: $1-5 (requests + data transfer)
+# - S3 Storage: $0.50-2 (static assets storage)
+# - Lambda: $0.20 (invalidation functions)
+# - Total: ~$5-15/month
+#
+# MODERATE USAGE (1K-100K users, 10-100GB transfer):
+# - CloudFront: $8-30 (requests + data transfer)
+# - S3 Storage: $2-5 (static assets + versions)
+# - Lambda: $1-3 (CI/CD functions)
+# - Total: ~$15-50/month
+#
+# HIGH USAGE (100K+ users, 1TB+ transfer):
+# - CloudFront: $40-150 (high data transfer)
+# - S3 Storage: $5-15 (many versions + assets)
+# - Lambda: $3-10 (frequent deployments)
+# - Total: ~$50-200/month
+
+# Cost Optimization Features:
+# 1. CloudFront PriceClass_100 (US, Canada, Europe only) - 30% savings vs global
+# 2. Aggressive caching for static assets (1 year TTL) - 90%+ cache hit rate
+# 3. S3 lifecycle policies - automatic cleanup of old versions
+# 4. Compressed content delivery - 70% bandwidth savings
+# 5. Origin Access Control (OAC) - secure, no extra costs
+# 6. Lambda@Edge avoided - uses CloudFront Functions (cheaper)
+
+# Scaling Characteristics:
+# - Automatically scales to handle millions of requests
+# - Global edge locations (200+ worldwide)
+# - No server management required
+# - Pay only for actual usage (requests + data transfer)
+# - 99.99% uptime SLA 
